@@ -1,5 +1,7 @@
-require(['jquery', 'jquery.bootstrap', 'backbone', 'mustache', 'marionette', 'menu-manager','router', 'app'], 
-		function($, jQueryBootstrap, Backbone, Mustache, Marionette, MenuManager, Router, App) {
+require(['jquery', 'jquery.bootstrap', 'backbone', 'mustache', 'marionette', 'menu-manager','router', 'app','portal'], 
+		function($, jQueryBootstrap, Backbone, Mustache, Marionette, MenuManager, Router, App, Portal) {
+
+	window.Mustache = Mustache;
 
     $.ajaxSetup({
         contentType: "application/json; charset=utf-8",
@@ -22,8 +24,7 @@ require(['jquery', 'jquery.bootstrap', 'backbone', 'mustache', 'marionette', 'me
             }
         }
     });
-
-
+    
     Backbone.Marionette.Renderer.render = function(template, data){
     	if (data) {
     	  data['_mls'] = function() { 
