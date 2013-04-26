@@ -1,6 +1,8 @@
 package pt.ist.bennu.cron4j.domain;
 
 class SchedulerSystem {
+	String queue;
+	DateTime lease;
 }
 
 class TaskSchedule {

@@ -4,6 +4,7 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -17,34 +18,47 @@ import pt.ist.bennu.service.Service;
 @Path("/tasks")
 public class TaskResource extends BennuRestResource {
 
-	@GET
-	@Produces(MediaType.APPLICATION_JSON)
-	public String get() {
-		return view(SchedulerSystem.getInstance().getTaskSchedule(), "tasks");
-	}
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public String get() {
+//        accessControl("#managers");
+        return view(SchedulerSystem.getInstance().getTaskSchedule(), "tasks");
+    }
 
-	@GET
-	@Path("{oid}")
-	@Produces(MediaType.APPLICATION_JSON)
-	public String get(@PathParam("oid") String taskOid) {
-		return view(readDomainObject(taskOid));
-	}
+    @GET
+    @Path("{oid}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String get(@PathParam("oid") String taskOid) {
+//        accessControl("#managers");
+        return view(readDomainObject(taskOid));
+    }
 
-	@POST
-	@Produces(MediaType.APPLICATION_JSON)
-	public String addSchedule(@FormParam("model") String configJson) {
-		return view(create(configJson, TaskSchedule.class));
-	}
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    public String addSchedule(@FormParam("model") String configJson) {
+//        accessControl("#managers");
+        return view(create(configJson, TaskSchedule.class));
+    }
 
-	@DELETE
-	@Path("{oid}")
-	public void delete(@PathParam("oid") String taskOid) {
-		clear((TaskSchedule) readDomainObject(taskOid));
-	}
+    @PUT
+    @Path("{oid}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String changeSchedule(@PathParam("oid") String taskScheduleOid, @FormParam("model") String taskScheduleJson) {
+//        accessControl("#managers");
+        final TaskSchedule taskSchedule = readDomainObject(taskScheduleOid);
+        return view(update(taskScheduleJson, taskSchedule));
+    }
 
-	@Service
-	public void clear(TaskSchedule task) {
-		task.delete();
-	}
+    @DELETE
+    @Path("{oid}")
+    public void delete(@PathParam("oid") String taskOid) {
+//        accessControl("#managers");
+        clear((TaskSchedule) readDomainObject(taskOid));
+    }
+
+    @Service
+    public void clear(TaskSchedule task) {
+        task.delete();
+    }
 
 }
