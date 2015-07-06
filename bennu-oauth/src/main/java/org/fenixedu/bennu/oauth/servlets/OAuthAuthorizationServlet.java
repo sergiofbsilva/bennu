@@ -77,45 +77,44 @@ import com.mitchellbosecke.pebble.extension.Function;
 import com.mitchellbosecke.pebble.loader.ClasspathLoader;
 import com.mitchellbosecke.pebble.template.PebbleTemplate;
 
-/**
- * Servlet implementation class OAuthAuthorizationServlet
- */
 @WebServlet("/oauth/*")
 public class OAuthAuthorizationServlet extends HttpServlet {
 
-    private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
-
-    private static final String GRANT_TYPE_AUTHORIZATION_CODE = "authorization_code";
-
-    private static final String CODE_EXPIRED = "code expired";
-
-    private static final String CODE_INVALID = "code invalid";
-
     Logger logger = LoggerFactory.getLogger(OAuthAuthorizationServlet.class);
-
+    public static final String RESOURCE_BUNDLE = "resources.OAuthResources";
     private static final long serialVersionUID = 1L;
+    private static final String BASIC = "Basic";
 
+    // OAuth properties
+    public final static String CLIENT_ID = "client_id";
+    public final static String CLIENT_SECRET = "client_secret";
+    public final static String REDIRECT_URI = "redirect_uri";
+    public final static String CODE = "code";
+    public final static String ACCESS_TOKEN = "access_token";
+    public final static String REFRESH_TOKEN = "refresh_token";
+    public final static String TOKEN_TYPE = "token_type";
+    public final static String GRANT_TYPE = "grant_type";
+    public final static String EXPIRES_IN = "expires_in";
+    public final static String DEVICE_ID = "device_id";
+    public final static String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
+    public final static String GRANT_TYPE_AUTHORIZATION_CODE = "authorization_code";
+    public final static String TOKEN_TYPE_HEADER_ACCESS_TOKEN = "Bearer";
     private final static String OAUTH_SESSION_KEY = "OAUTH_CLIENT_ID";
 
-    private final static String CLIENT_ID = "client_id";
-    private final static String CLIENT_SECRET = "client_secret";
-    private final static String REDIRECT_URI = "redirect_uri";
-    private final static String CODE = "code";
-    private final static String ACCESS_TOKEN = "access_token";
-    private final static String REFRESH_TOKEN = "refresh_token";
-    private final static String GRANT_TYPE = "grant_type";
-    private final static String EXPIRES_IN = "expires_in";
-    private final static String DEVICE_ID = "device_id";
+    // Error message 
+    public static final String APPLICATION_BANNED = "appBanned";
+    public static final String APPLICATION_DELETED = "appDeleted";
 
-    private final static String INVALID_GRANT = "invalid_grant";
-    private static final String REFRESH_TOKEN_DOESN_T_MATCH = "refresh token doesn't match";
-    private static final String CREDENTIALS_OR_REDIRECT_URI_DON_T_MATCH = "credentials or redirect_uri don't match";
-    private static final String REFRESH_TOKEN_NOT_RECOGNIZED = "refresh token not recognized.";
-    private static final String REFRESH_TOKEN_INVALID = "refreshTokenInvalid";
-    private static final String REFRESH_TOKEN_INVALID_FORMAT = "refreshTokenInvalidFormat";
-    private static final String CLIENT_ID_NOT_FOUND = "client_id not found";
-    private static final String APPLICATION_BANNED = "the application has been banned.";
-    private static final String APPLICATION_DELETED = "the application has been deleted.";
+    public static final String INVALID_SCOPE = "invalidScope";
+
+    public static final String ACCESS_TOKEN_INVALID = "accessTokenInvalid";
+    public static final String ACCESS_TOKEN_INVALID_FORMAT = "accessTokenInvalidFormat";
+    public static final String ACCESS_TOKEN_EXPIRED = "accessTokenExpired";
+
+    public static final String REFRESH_TOKEN_INVALID = "refreshTokenInvalid";
+    public static final String REFRESH_TOKEN_INVALID_FORMAT = "refreshTokenInvalidFormat";
+
+    public static final String INVALID_GRANT = "invalidGrant";
 
     private PebbleEngine engine;
 
@@ -138,7 +137,6 @@ public class OAuthAuthorizationServlet extends HttpServlet {
                 }
             }
         });
-        //engine.addExtension(new PortalExtension());
         if (BennuPortalConfiguration.getConfiguration().themeDevelopmentMode()) {
             engine.setTemplateCache(null);
         }
@@ -191,7 +189,6 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         }
     }
 
-    //refreshAccessToken
     private void handleRefreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         String[] authorizationHeader = getAuthorizationHeader(request);
@@ -212,7 +209,8 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         ExternalApplication externalApplication = getDomainObject(clientId, ExternalApplication.class).orElse(null);
 
         if (externalApplication == null) {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CLIENT_ID_NOT_FOUND);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.clientid.found"));
             return;
         }
 
@@ -221,7 +219,8 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         }
 
         if (Strings.isNullOrEmpty(refreshToken)) {
-            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, REFRESH_TOKEN_INVALID_FORMAT, REFRESH_TOKEN_NOT_RECOGNIZED);
+            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, REFRESH_TOKEN_INVALID_FORMAT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.refreshtoken.recognized"));
             return;
         }
 
@@ -229,14 +228,16 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         try {
             refreshTokenDecoded = new String(Base64.getDecoder().decode(refreshToken));
         } catch (IllegalArgumentException iae) {
-            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, REFRESH_TOKEN_INVALID_FORMAT, REFRESH_TOKEN_NOT_RECOGNIZED);
+            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, REFRESH_TOKEN_INVALID_FORMAT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.refreshtoken.recognized"));
             return;
         }
 
         String[] refreshTokenBuilder = refreshTokenDecoded.split(":");
 
         if (refreshTokenBuilder.length != 2) {
-            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, REFRESH_TOKEN_INVALID_FORMAT, REFRESH_TOKEN_NOT_RECOGNIZED);
+            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, REFRESH_TOKEN_INVALID_FORMAT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.refreshtoken.recognized"));
             return;
         }
 
@@ -245,12 +246,14 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         ApplicationUserSession appUserSession = FenixFramework.getDomainObject(appUserSessionExternalId);
 
         if (!externalApplication.matchesSecret(clientSecret)) {
-            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, INVALID_GRANT, CREDENTIALS_OR_REDIRECT_URI_DON_T_MATCH);
+            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.secretcredentials.match"));
             return;
         }
 
         if (!FenixFramework.isDomainObjectValid(appUserSession) || !appUserSession.matchesRefreshToken(refreshToken)) {
-            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, REFRESH_TOKEN_INVALID, REFRESH_TOKEN_DOESN_T_MATCH);
+            sendOAuthErrorResponse(response, Status.UNAUTHORIZED, REFRESH_TOKEN_INVALID,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.refreshtoken.match"));
             return;
         }
 
@@ -266,9 +269,9 @@ public class OAuthAuthorizationServlet extends HttpServlet {
     }
 
     private String[] getAuthorizationHeader(HttpServletRequest request) {
-        String authorization = request.getHeader("Authorization");
-        if (authorization != null && authorization.startsWith("Basic")) {
-            String base64Credentials = authorization.substring("Basic".length()).trim();
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorization != null && authorization.startsWith(BASIC)) {
+            String base64Credentials = authorization.substring(BASIC.length()).trim();
             String[] values;
             try {
                 String credentials = new String(Base64.getDecoder().decode(base64Credentials), Charset.forName("UTF-8"));
@@ -282,7 +285,6 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         return null;
     }
 
-    //getTokens
     private void handleAccessToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         String[] authorizationHeader = getAuthorizationHeader(request);
@@ -329,12 +331,14 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         ExternalApplication externalApplication = getDomainObject(clientId, ExternalApplication.class).orElse(null);
 
         if (externalApplication == null) {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CLIENT_ID_NOT_FOUND);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.clientid.found"));
             return;
         }
 
         if (externalApplication instanceof ServiceApplication && !GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType)) {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CLIENT_ID_NOT_FOUND);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.clientid.found"));
             return;
         }
 
@@ -343,7 +347,8 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         }
 
         if (!externalApplication.matches(redirectUrl, clientSecret)) {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CREDENTIALS_OR_REDIRECT_URI_DON_T_MATCH);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.secretcredentials.match"));
             return;
         }
 
@@ -359,7 +364,8 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         ApplicationUserSession appUserSession = externalApplication.getApplicationUserSession(authCode);
 
         if (appUserSession == null) {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CODE_INVALID);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.code.invalid"));
             return;
         }
 
@@ -374,7 +380,8 @@ public class OAuthAuthorizationServlet extends HttpServlet {
             jsonResponse.addProperty(EXPIRES_IN, OAuthProperties.getConfiguration().getAccessTokenExpirationSeconds());
             sendOAuthResponse(response, Status.OK, jsonResponse);
         } else {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CODE_EXPIRED);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.code.expired"));
         }
 
     }
@@ -427,7 +434,7 @@ public class OAuthAuthorizationServlet extends HttpServlet {
     private void errorPage(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> ctx = new HashMap<>();
         PortalConfiguration config = PortalConfiguration.getInstance();
-        // Add relevant variables
+
         ctx.put("config", config);
         ctx.put("currentLocale", I18N.getLocale());
         ctx.put("contextPath", request.getContextPath());
@@ -472,7 +479,7 @@ public class OAuthAuthorizationServlet extends HttpServlet {
             throws IOException {
         Map<String, Object> ctx = new HashMap<>();
         PortalConfiguration config = PortalConfiguration.getInstance();
-        // Add relevant variables
+
         ctx.put("config", config);
         ctx.put("app", clientApplication);
         ctx.put("currentLocale", I18N.getLocale());
@@ -504,7 +511,8 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         ExternalApplication externalApplication = getDomainObject(clientId, ExternalApplication.class).orElse(null);
 
         if (externalApplication == null || externalApplication instanceof ServiceApplication) {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CLIENT_ID_NOT_FOUND);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.clientid.found"));
             return;
         }
 
@@ -513,7 +521,8 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         }
 
         if (!externalApplication.matchesUrl(redirectUrl)) {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CREDENTIALS_OR_REDIRECT_URI_DON_T_MATCH);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.secretcredentials.match"));
             return;
         }
 
@@ -548,7 +557,8 @@ public class OAuthAuthorizationServlet extends HttpServlet {
         ExternalApplication externalApplication = FenixFramework.getDomainObject(clientId);
 
         if (externalApplication == null || externalApplication instanceof ServiceApplication) {
-            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT, CLIENT_ID_NOT_FOUND);
+            sendOAuthErrorResponse(response, Status.BAD_REQUEST, INVALID_GRANT,
+                    BundleUtil.getString(RESOURCE_BUNDLE, "error.description.clientid.found"));
             return;
         }
 

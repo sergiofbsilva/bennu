@@ -29,7 +29,6 @@ import java.lang.annotation.Target;
  * 
  * {@link #value()} defines the necessary scopes to invoke the endpoint
  * if {@link #serviceOnly()} is true only service applications can invoke the endpoint (the scopes are ignored)
- * 
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

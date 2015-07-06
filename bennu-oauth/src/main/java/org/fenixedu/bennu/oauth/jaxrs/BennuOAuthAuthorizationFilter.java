@@ -28,11 +28,11 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.fenixedu.bennu.core.domain.User;
+import org.fenixedu.bennu.core.i18n.BundleUtil;
 import org.fenixedu.bennu.core.security.Authenticate;
 import org.fenixedu.bennu.oauth.annotation.OAuthEndpoint;
 import org.fenixedu.bennu.oauth.domain.ApplicationUserSession;
@@ -79,12 +79,14 @@ class BennuOAuthAuthorizationFilter implements ContainerRequestFilter {
         if (serviceApplication.isPresent()) {
 
             if (serviceApplication.get().isDeleted()) {
-                sendError(requestContext, "accessTokenInvalidFormat", "Access Token not recognized.");
+                sendError(requestContext, OAuthAuthorizationServlet.ACCESS_TOKEN_INVALID_FORMAT, BundleUtil.getString(
+                        OAuthAuthorizationServlet.RESOURCE_BUNDLE, "error.description.accesstoken.recognized"));
                 return;
             }
 
             if (serviceApplication.get().isBanned()) {
-                sendError(requestContext, "appBanned", "The application has been banned.");
+                sendError(requestContext, OAuthAuthorizationServlet.APPLICATION_BANNED,
+                        BundleUtil.getString(OAuthAuthorizationServlet.RESOURCE_BUNDLE, "error.description.application.banned"));
                 return;
             }
 
@@ -130,35 +132,40 @@ class BennuOAuthAuthorizationFilter implements ContainerRequestFilter {
                 ApplicationUserSession appUserSession = session.get();
                 ExternalApplication app = session.get().getApplicationUserAuthorization().getApplication();
                 if (app.isDeleted()) {
-                    sendError(requestContext, "accessTokenInvalidFormat", "Access Token not recognized.");
+                    sendError(requestContext, OAuthAuthorizationServlet.APPLICATION_DELETED, BundleUtil.getString(
+                            OAuthAuthorizationServlet.RESOURCE_BUNDLE, "error.description.accesstoken.recognized"));
                     return;
                 }
 
                 if (app.isBanned()) {
-                    sendError(requestContext, "appBanned", "The application has been banned.");
+                    sendError(requestContext, OAuthAuthorizationServlet.APPLICATION_BANNED, BundleUtil.getString(
+                            OAuthAuthorizationServlet.RESOURCE_BUNDLE, "error.description.application.banned"));
                     return;
                 }
 
                 if (!app.getScopesSet().contains(scope.get())) {
-                    sendError(requestContext, "invalidScope", "Application doesn't have permissions to this getEndpoint().");
+                    sendError(requestContext, OAuthAuthorizationServlet.INVALID_SCOPE, BundleUtil.getString(
+                            OAuthAuthorizationServlet.RESOURCE_BUNDLE, "error.description.application.permissions"));
                     return;
                 }
 
                 if (!appUserSession.matchesAccessToken(accessToken)) {
-                    sendError(requestContext, "accessTokenInvalid", "Access Token doesn't match.");
+                    sendError(requestContext, OAuthAuthorizationServlet.ACCESS_TOKEN_INVALID, BundleUtil.getString(
+                            OAuthAuthorizationServlet.RESOURCE_BUNDLE, "error.description.accesstoken.match"));
                     return;
                 }
 
                 if (!appUserSession.isAccessTokenValid()) {
-                    sendError(requestContext, "accessTokenExpired",
-                            "The access has expired. Please use the refresh token endpoint to generate a new one.");
+                    sendError(requestContext, OAuthAuthorizationServlet.ACCESS_TOKEN_EXPIRED, BundleUtil.getString(
+                            OAuthAuthorizationServlet.RESOURCE_BUNDLE, "error.description.accesstoken.expired"));
                     return;
                 }
 
                 User foundUser = appUserSession.getApplicationUserAuthorization().getUser();
                 Authenticate.mock(foundUser);
             } else {
-                sendError(requestContext, "accessTokenInvalidFormat", "Access Token not recognized.");
+                sendError(requestContext, OAuthAuthorizationServlet.ACCESS_TOKEN_INVALID_FORMAT, BundleUtil.getString(
+                        OAuthAuthorizationServlet.RESOURCE_BUNDLE, "error.description.accesstoken.recognized"));
                 return;
             }
 
@@ -188,8 +195,8 @@ class BennuOAuthAuthorizationFilter implements ContainerRequestFilter {
         JsonObject json = new JsonObject();
         json.addProperty("error", error);
         json.addProperty("error_description", errorDescription);
-        requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity(json.toString()).type(MediaType.APPLICATION_JSON)
-                .build());
+        requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity(json.toString())
+                .type("application/json; charset=UTF-8").build());
     }
 
     private Optional<ServiceApplication> extractServiceApplication(String accessToken) {

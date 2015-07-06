@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Bennu OAuth.  If not, see <http://www.gnu.org/licenses/>.
  */
-package bootstrap;
+package org.fenixedu.bennu.bootstrap;
 
 import java.util.List;
 
