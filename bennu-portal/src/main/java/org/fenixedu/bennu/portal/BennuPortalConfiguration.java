@@ -15,6 +15,15 @@ public class BennuPortalConfiguration {
 
         @ConfigurationProperty(key = "logout.url", description = "The URL to redirect the user to upon logout.")
         public String logoutURL();
+
+        @ConfigurationProperty(key = "connect.base.url")
+        String connectBaseUrl();
+
+        @ConfigurationProperty(key = "connect.client.id")
+        String connectClientId();
+
+        @ConfigurationProperty(key = "connect.client.secret")
+        String connectClientSecret();
     }
 
     public static ConfigurationProperties getConfiguration() {

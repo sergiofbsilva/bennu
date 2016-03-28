@@ -15,6 +15,7 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
+import org.fenixedu.bennu.connect.ConnectLoginProvider;
 import org.fenixedu.bennu.core.servlet.ExceptionHandlerFilter;
 import org.fenixedu.bennu.core.util.CoreConfiguration;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public class PortalInitializer implements ServletContextListener {
         }
 
         sce.getServletContext().setAttribute("portal", new PortalBean(sce.getServletContext()));
+        PortalLoginServlet.registerProvider(new ConnectLoginProvider());
     }
 
     private void registerBuiltinPortalBackends() {
