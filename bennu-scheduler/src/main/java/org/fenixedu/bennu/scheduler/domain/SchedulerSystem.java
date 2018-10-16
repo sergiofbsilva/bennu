@@ -1,7 +1,5 @@
 package org.fenixedu.bennu.scheduler.domain;
 
-import it.sauronsoftware.cron4j.Scheduler;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,20 +16,22 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.io.domain.FileStorage;
+import org.fenixedu.bennu.scheduler.S3SchedulerConfiguration;
 import org.fenixedu.bennu.scheduler.SchedulerConfiguration;
 import org.fenixedu.bennu.scheduler.TaskRunner;
 import org.fenixedu.bennu.scheduler.annotation.Task;
 import org.fenixedu.bennu.scheduler.log.ExecutionLogRepository;
 import org.fenixedu.bennu.scheduler.log.FileSystemLogRepository;
+import org.fenixedu.bennu.scheduler.log.S3FileRepository;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.io.Files;
+import it.sauronsoftware.cron4j.Scheduler;
 import pt.ist.fenixframework.Atomic;
 import pt.ist.fenixframework.Atomic.TxMode;
 import pt.ist.fenixframework.FenixFramework;
-
-import com.google.common.io.Files;
 
 public class SchedulerSystem extends SchedulerSystem_Base {
 
@@ -510,7 +510,14 @@ public class SchedulerSystem extends SchedulerSystem_Base {
      */
     public static ExecutionLogRepository getLogRepository() {
         if (repository == null) {
-            repository = new FileSystemLogRepository(3);
+            final String strategy = SchedulerConfiguration.getConfiguration().schedulerLogStrategy();
+            if (strategy.equals(FileSystemLogRepository.class.getSimpleName())) {
+                repository = new FileSystemLogRepository(3);
+            }
+            if (strategy.equals(S3FileRepository.class.getSimpleName())) {
+                repository = new S3FileRepository(S3SchedulerConfiguration.getConfiguration());
+            }
+            throw new Error("No scheduler log strategy defined");
         }
         return repository;
     }

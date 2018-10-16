@@ -17,6 +17,9 @@ public class SchedulerConfiguration {
         @ConfigurationProperty(key = "scheduler.queue.threads.number",
                 description = "Number of threads processing the task queue.", defaultValue = "2")
         public Integer queueThreadsNumber();
+
+        @ConfigurationProperty(key = "scheduler.log.repository.strategy", defaultValue = "FileSystemLogRepository")
+        String schedulerLogStrategy();
     }
 
     public static ConfigurationProperties getConfiguration() {
