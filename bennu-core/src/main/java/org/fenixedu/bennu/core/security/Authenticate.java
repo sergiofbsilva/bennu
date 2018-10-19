@@ -46,6 +46,9 @@ public class Authenticate {
 
     private static final Collection<UserAuthenticationListener> userAuthenticationListeners = new ConcurrentLinkedQueue<>();
 
+    private static final LoginBlockerContext loginBlockerContext = new LoginBlockerContext();
+
+
     /**
      * Logs in the given User, associating it with the browser session for the current user.
      * 
@@ -194,4 +197,16 @@ public class Authenticate {
         }
     }
 
+    public static LoginBlockerContext getLoginBlockerContext() {
+        return loginBlockerContext;
+    }
+
+    static {
+        addUserAuthenticationListener(new UserAuthenticationListener() {
+            @Override
+            public void onLogin(HttpServletRequest request, HttpServletResponse response, User user) {
+                loginBlockerContext.tryToBlock(request, response, user);
+            }
+        });
+    }
 }
